@@ -78,7 +78,7 @@ function load_database(files::AbstractVector{<: AbstractString})
     database
 end
 
-const REFIMGDIR
+REFIMGDIR = nothing
 
 function __init__()
     global REFIMGDIR
