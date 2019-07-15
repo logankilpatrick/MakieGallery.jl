@@ -3,8 +3,14 @@ variables:
     MODERNGL_DEBUGGING: "true"
     JULIA_DEPOT_PATH: "$CI_PROJECT_DIR/.julia/"
 
-job:
-    image: "juliagpu/julia:v1.1-${CI_IMAGE_TAG}"
+stages:
+    - test
+    - documentation
+    - refimages
+
+gallerytest:
+    stage: test
+    image: "juliagpu/julia:v1.2-${CI_IMAGE_TAG}"
     before_script:
         - apt-get -qq update
         # glfw
@@ -19,10 +25,43 @@ job:
       - julia -e 'using InteractiveUtils; versioninfo()'
       - julia --color=yes --project -e "using Pkg; Pkg.pkg\"add AbstractPlotting#master StatsMakie#master Makie#master GLMakie#master GDAL; test\""
 
-
-
     artifacts:
         when: on_failure
         paths:
         - test/tested_different
-        expire_in: 1 week
+        - test/test_recordings
+        expire_in: 4 days
+
+deploydocs:
+  stage: documentation
+  image: "juliagpu/julia:v1.2-${CI_IMAGE_TAG}"
+  variables:
+    DOCUMENTER_DEBUG: "true"
+    CI_DEV_PKGS: "Makie AbstractPlotting GLMakie StatsMakie"
+  script:
+    - julia --project=docs/ -e 'using Pkg;
+                                Pkg.add([PackageSpec(path=pwd());
+                                         [PackageSpec(name=pkg; rev="master")
+                                          for pkg in split(get(ENV,"CI_DEV_PKGS",""))]]);'
+    - julia --project=docs/ -e 'using Pkg; Pkg.add(PackageSpec(url = "https://github.com/asinghvi17/Documenter.jl", rev = "as/generic-ci"))'
+    - julia --project=docs/ docs/make.jl
+  artifacts:
+    paths:
+    - docs/build
+    expire_in: 2 days
+
+deployrefimages:
+    stage: refimages
+    when: manual
+    dependencies:
+        - gallerytest
+    variables:
+        MAKIEGALLERY_REFIMG_PATH: "$CI_PROJECT_DIR/ReferenceImages"
+    before_script:
+        - git clone https://github.com/SimonDanisch/ReferenceImages
+        - pushd ReferenceImages;
+                git checkout gitlab-new;
+                git push --set-upstream origin;
+            popd
+    script:
+        julia test/upgrade_recordings.jl
