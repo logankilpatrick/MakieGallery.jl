@@ -23,7 +23,7 @@ gallerytest:
       - mkdir $JULIA_DEPOT_PATH # Pkg.jl#325
       - glxinfo | grep 'version'
       - julia -e 'using InteractiveUtils; versioninfo()'
-      - julia --color=yes --project -e "using Pkg; Pkg.pkg\"add AbstractPlotting#master StatsMakie#master Makie#master GLMakie#master GDAL; test\""
+      - julia --color=yes --project -e "using Pkg; Pkg.pkg\"add AbstractPlotting#master StatsMakie#master Makie#master GLMakie#master GLFW GDAL; resolve; instantiate; test\""
 
     artifacts:
         when: on_failure
@@ -35,6 +35,7 @@ gallerytest:
 deploydocs:
   stage: documentation
   image: "juliagpu/julia:v1.2-${CI_IMAGE_TAG}"
+  when: always
   variables:
     DOCUMENTER_DEBUG: "true"
     CI_DEV_PKGS: "Makie AbstractPlotting GLMakie StatsMakie"
