@@ -68,6 +68,7 @@
     end
 
     @cell "sliders" [scatter, slider, vbox] begin
+        using Makie
         s1 = slider(LinRange(0.01, 1, 100), raw = true, camera = campixel!, start = 0.3)
         s2 = slider(LinRange(-2pi, 2pi, 100), raw = true, camera = campixel!)
         data = lift(s2[end][:value]) do v
